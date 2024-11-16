@@ -20,13 +20,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// Handle stdin buffering if no file is provided
 	var inputData []byte
 	if file == "" {
-		inputData, err = readStdin()
+		stdinStatus, err := determineStdinEmpty()
 		if err != nil {
 			log.Fatalf("Error reading stdin: %v", err)
+		}
+		if stdinStatus {
+			log.Fatal("Error stdin is empty")
+		} else {
+			inputData, err = readStdin()
+			if err != nil {
+				log.Fatalf("Error reading stdin: %v", err)
+			}
 		}
 	}
 
@@ -34,6 +41,18 @@ func main() {
 	if err := executeCommand(command, file, inputData); err != nil {
 		log.Fatalf("Error executing command: %v", err)
 	}
+}
+
+func determineStdinEmpty() (bool, error) {
+	stdinPointer := os.Stdin
+	stdinStat, err := stdinPointer.Stat()
+	if err != nil {
+		return false, fmt.Errorf("problem opening stdin stats")
+	}
+	if stdinStat.Mode()&os.ModeCharDevice != 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 // parseArgs validates and parses the command-line arguments.
