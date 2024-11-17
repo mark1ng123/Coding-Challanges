@@ -7,8 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	file_utilities "coding-challenge/wc-tool-go/utilities"
+	file_utilities "utilities"
 )
 
 func main() {

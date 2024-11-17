@@ -156,3 +156,32 @@ func NumberOfChars(inputSource interface{}) (int, error) {
 
 	return charCounter, nil
 }
+
+func DeclareValidJson(filePath string) (bool, error) {
+	fileContent, err := LoadFile(filePath)
+	if err != nil {
+		return false, err
+	}
+	scanner := bufio.NewScanner(fileContent)
+	scanner.Split(bufio.ScanRunes)
+
+	var CLOSING, OPENING byte = 125, 123 // Byte ref from ASCII
+	parenthesesStack := NewStack[byte]()
+	var iterationFlag bool = false
+	for scanner.Scan() {
+		iterationFlag = true
+		currentByte := scanner.Bytes()[0]
+		if parenthesesStack.isEmpty() && currentByte == CLOSING {
+			return false, fmt.Errorf("invalid json")
+		} else if topVal, _ := parenthesesStack.Top(); topVal == OPENING && currentByte == CLOSING {
+			parenthesesStack.Pop()
+		} else if currentByte == OPENING {
+			parenthesesStack.Push(scanner.Bytes()[0])
+		}
+	}
+	fileContent.Close()
+	if iterationFlag {
+		return parenthesesStack.isEmpty(), nil
+	}
+	return false, fmt.Errorf("invalid json")
+}
