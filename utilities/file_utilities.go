@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func CheckForError(err error) bool {
@@ -184,4 +185,61 @@ func DeclareValidJson(filePath string) (bool, error) {
 		return parenthesesStack.isEmpty(), nil
 	}
 	return false, fmt.Errorf("invalid json")
+}
+
+func ParseJson(filePath string) (map[string]string, error) {
+	fileContent, err := LoadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(fileContent)
+	scanner.Split(bufio.ScanRunes)
+	var splitFlag bool = false
+	var canReadFlag bool = false
+	var firstQuotasFlag bool = true
+	var key []string
+	var value []string
+	resultMapJson := make(map[string]string)
+	doubleQuotasFlag := NewStack[string]()
+
+	for scanner.Scan() {
+		currentChar := scanner.Text()
+		switch currentChar {
+		case `"`:
+			if firstQuotasFlag {
+				doubleQuotasFlag.Push(currentChar)
+				firstQuotasFlag = false
+				canReadFlag = true
+			} else {
+				doubleQuotasFlag.Pop()
+				if !doubleQuotasFlag.isEmpty() {
+					return nil, fmt.Errorf("invalid string formatting in double quotas")
+				}
+				firstQuotasFlag = true
+			}
+		case `:`:
+			if !firstQuotasFlag {
+				splitFlag = true
+			}
+		case "\n":
+			firstQuotasFlag = true
+			canReadFlag = false
+			splitFlag = false
+			resultMapJson[strings.Join(key, "")] = strings.Join(value, "")
+		case `{`:
+			continue
+		case `}`:
+			continue
+		default:
+			if canReadFlag {
+				if splitFlag {
+					value = append(value, currentChar)
+				} else {
+					key = append(key, currentChar)
+				}
+			}
+		}
+	}
+	return nil, nil
 }

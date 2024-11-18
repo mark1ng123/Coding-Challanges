@@ -6,10 +6,12 @@ import (
 )
 
 func main() {
-	filepath := "step1/valid.json"
+	filepath := "step2/valid.json"
 	isValid, err := file_utilities.DeclareValidJson(filepath)
 	if err != nil {
 		log.Fatalf("Error in json: %v", err)
 	}
 	log.Printf("Json validation func returned %v", isValid)
+
+	file_utilities.ParseJson(filepath)
 }
