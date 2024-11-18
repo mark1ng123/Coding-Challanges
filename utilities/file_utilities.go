@@ -224,15 +224,26 @@ func ParseJson(filePath string) (map[string]string, error) {
 				splitFlag = true
 			}
 		case "\n":
+			if len(key) == 0 {
+				continue
+			}
+			fmt.Println("Debug insertion", currentChar)
 			firstQuotasFlag = true
 			canReadFlag = false
 			splitFlag = false
 			resultMapJson[strings.Join(key, "")] = strings.Join(value, "")
+			clear(key)
+			clear(value)
 		case "{":
 			continue
 		case "}":
 			continue
+		case ",":
+			continue
+		case " ":
+			continue
 		default:
+			fmt.Println("Debug default", currentChar)
 			if canReadFlag {
 				if splitFlag {
 					value = append(value, currentChar)

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	filepath := "step2/valid.json"
+	filepath := "step2/valid2.json"
 	isValid, err := file_utilities.DeclareValidJson(filepath)
 	if err != nil {
 		log.Fatalf("Error in json: %v", err)
@@ -21,4 +21,5 @@ func main() {
 	for key, value := range resultMap {
 		fmt.Println(key, value)
 	}
+	fmt.Println(resultMap)
 }
