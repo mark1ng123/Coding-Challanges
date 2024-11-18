@@ -217,9 +217,10 @@ func ParseJson(filePath string) (map[string]string, error) {
 					return nil, fmt.Errorf("invalid string formatting in double quotas")
 				}
 				firstQuotasFlag = true
+				canReadFlag = false
 			}
-		case `:`:
-			if !firstQuotasFlag {
+		case ":":
+			if firstQuotasFlag {
 				splitFlag = true
 			}
 		case "\n":
@@ -227,9 +228,9 @@ func ParseJson(filePath string) (map[string]string, error) {
 			canReadFlag = false
 			splitFlag = false
 			resultMapJson[strings.Join(key, "")] = strings.Join(value, "")
-		case `{`:
+		case "{":
 			continue
-		case `}`:
+		case "}":
 			continue
 		default:
 			if canReadFlag {
@@ -241,5 +242,5 @@ func ParseJson(filePath string) (map[string]string, error) {
 			}
 		}
 	}
-	return nil, nil
+	return resultMapJson, nil
 }

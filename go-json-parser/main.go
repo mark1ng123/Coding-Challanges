@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	file_utilities "utilities"
 )
@@ -13,5 +14,11 @@ func main() {
 	}
 	log.Printf("Json validation func returned %v", isValid)
 
-	file_utilities.ParseJson(filepath)
+	resultMap, err := file_utilities.ParseJson(filepath)
+	if err != nil {
+		log.Fatalf("Error in json parsing: %v", err)
+	}
+	for key, value := range resultMap {
+		fmt.Println(key, value)
+	}
 }
