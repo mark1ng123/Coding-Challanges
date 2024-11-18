@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func CheckForError(err error) bool {
@@ -187,7 +186,7 @@ func DeclareValidJson(filePath string) (bool, error) {
 	return false, fmt.Errorf("invalid json")
 }
 
-func ParseJson(filePath string) (map[string]string, error) {
+func ParseJson(filePath string) (map[string]interface{}, error) {
 	fileContent, err := LoadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -195,63 +194,66 @@ func ParseJson(filePath string) (map[string]string, error) {
 
 	scanner := bufio.NewScanner(fileContent)
 	scanner.Split(bufio.ScanRunes)
-	var splitFlag bool = false
-	var canReadFlag bool = false
-	var firstQuotasFlag bool = true
-	var key []string
-	var value []string
-	resultMapJson := make(map[string]string)
-	doubleQuotasFlag := NewStack[string]()
+	var (
+		state        string = "start" // start, key, value, colon, end
+		currentKey   []rune
+		currentValue []rune
+		result       = make(map[string]interface{})
+	)
 
 	for scanner.Scan() {
 		currentChar := scanner.Text()
-		switch currentChar {
-		case `"`:
-			if firstQuotasFlag {
-				doubleQuotasFlag.Push(currentChar)
-				firstQuotasFlag = false
-				canReadFlag = true
-			} else {
-				doubleQuotasFlag.Pop()
-				if !doubleQuotasFlag.isEmpty() {
-					return nil, fmt.Errorf("invalid string formatting in double quotas")
+		switch state {
+		case "start":
+			if currentChar == "{" {
+				state = "key"
+			}
+		case "key":
+			if currentChar == "\"" {
+				if len(currentKey) > 0 {
+					state = "colon"
 				}
-				firstQuotasFlag = true
-				canReadFlag = false
+			} else if currentChar != " " && currentChar != "\n" {
+				currentKey = append(currentKey, rune(currentChar[0]))
 			}
-		case ":":
-			if firstQuotasFlag {
-				splitFlag = true
+
+		case "colon":
+			if currentChar == ":" {
+				state = "value"
+			} else if currentChar != " " && currentChar != "\n" {
+				return nil, fmt.Errorf("expected ':' after key, got '%s'", currentChar)
 			}
-		case "\n":
-			if len(key) == 0 {
-				continue
-			}
-			fmt.Println("Debug insertion", currentChar)
-			firstQuotasFlag = true
-			canReadFlag = false
-			splitFlag = false
-			resultMapJson[strings.Join(key, "")] = strings.Join(value, "")
-			clear(key)
-			clear(value)
-		case "{":
-			continue
-		case "}":
-			continue
-		case ",":
-			continue
-		case " ":
-			continue
-		default:
-			fmt.Println("Debug default", currentChar)
-			if canReadFlag {
-				if splitFlag {
-					value = append(value, currentChar)
-				} else {
-					key = append(key, currentChar)
+
+		case "value":
+			if currentChar == "\"" {
+				if len(currentValue) > 0 {
+					// End of value
+					result[string(currentKey)] = string(currentValue)
+					currentKey = nil
+					currentValue = nil
+					state = "end"
 				}
+			} else if currentChar != " " && currentChar != "\n" {
+				currentValue = append(currentValue, rune(currentChar[0]))
+			}
+
+		case "end":
+			if currentChar == "," {
+				// Another key-value pair expected
+				state = "key"
+			} else if currentChar == "}" {
+				// End of JSON
+				return result, nil
+			} else if currentChar != " " && currentChar != "\n" {
+				return nil, fmt.Errorf("unexpected currentCharacter '%s' after value", currentChar)
 			}
 		}
 	}
-	return resultMapJson, nil
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %w", err)
+	}
+	fileContent.Close()
+	return result, nil
+
 }
