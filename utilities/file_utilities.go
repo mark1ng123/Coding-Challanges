@@ -243,6 +243,7 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 				state = "key"
 			} else if currentChar == "}" {
 				// End of JSON
+				fileContent.Close()
 				return result, nil
 			} else if currentChar != " " && currentChar != "\n" {
 				return nil, fmt.Errorf("unexpected currentCharacter '%s' after value", currentChar)
@@ -250,10 +251,9 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 		}
 	}
 
+	fileContent.Close()
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading file: %w", err)
 	}
-	fileContent.Close()
 	return result, nil
-
 }
