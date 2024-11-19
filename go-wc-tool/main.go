@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
-	file_utilities "utilities"
+	"utilities"
 )
 
 func main() {
@@ -139,9 +139,9 @@ func countBytes(file string, inputData []byte) (string, error) {
 	var err error
 
 	if file == "" {
-		count, err = file_utilities.NumberOfBytesCommand(bytes.NewReader(inputData))
+		count, err = utilities.NumberOfBytesCommand(bytes.NewReader(inputData))
 	} else {
-		count, err = file_utilities.NumberOfBytesCommand(file)
+		count, err = utilities.NumberOfBytesCommand(file)
 	}
 
 	if err != nil {
@@ -156,9 +156,9 @@ func countLines(file string, inputData []byte) (string, error) {
 	var err error
 
 	if file == "" {
-		count, err = file_utilities.NumberOfLinesCommand(bytes.NewReader(inputData))
+		count, err = utilities.NumberOfLinesCommand(bytes.NewReader(inputData))
 	} else {
-		count, err = file_utilities.NumberOfLinesCommand(file)
+		count, err = utilities.NumberOfLinesCommand(file)
 	}
 
 	if err != nil {
@@ -173,9 +173,9 @@ func countWords(file string, inputData []byte) (string, error) {
 	var err error
 
 	if file == "" {
-		count, err = file_utilities.NumberOfWordsCommand(bytes.NewReader(inputData))
+		count, err = utilities.NumberOfWordsCommand(bytes.NewReader(inputData))
 	} else {
-		count, err = file_utilities.NumberOfWordsCommand(file)
+		count, err = utilities.NumberOfWordsCommand(file)
 	}
 
 	if err != nil {
@@ -190,9 +190,9 @@ func countChars(file string, inputData []byte) (string, error) {
 	var err error
 
 	if file == "" {
-		count, err = file_utilities.NumberOfChars(bytes.NewReader(inputData))
+		count, err = utilities.NumberOfChars(bytes.NewReader(inputData))
 	} else {
-		count, err = file_utilities.NumberOfChars(file)
+		count, err = utilities.NumberOfChars(file)
 	}
 
 	if err != nil {
