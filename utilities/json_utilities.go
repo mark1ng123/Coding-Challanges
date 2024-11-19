@@ -1,4 +1,4 @@
-package file_utilities
+package utilities
 
 import (
 	"bufio"
