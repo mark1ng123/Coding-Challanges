@@ -195,10 +195,11 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 	scanner := bufio.NewScanner(fileContent)
 	scanner.Split(bufio.ScanRunes)
 	var (
-		state        string = "start" // start, key, value, colon, end
-		currentKey   []rune
-		currentValue []rune
-		result       = make(map[string]interface{})
+		state                string = "start" // start, key, value, colon, end
+		currentKey           []rune
+		currentValue         []rune
+		numberOfDoubleQuotas int = 0
+		result                   = make(map[string]interface{})
 	)
 
 	for scanner.Scan() {
@@ -210,6 +211,7 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 			}
 		case "key":
 			if currentChar == "\"" {
+				numberOfDoubleQuotas++
 				if len(currentKey) > 0 {
 					state = "colon"
 				}
@@ -218,14 +220,18 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 			}
 
 		case "colon":
-			if currentChar == ":" {
+			if numberOfDoubleQuotas != 2 {
+				return nil, fmt.Errorf("expected '\"' to match on a key")
+			} else if currentChar == ":" {
 				state = "value"
+				numberOfDoubleQuotas = 0
 			} else if currentChar != " " && currentChar != "\n" {
 				return nil, fmt.Errorf("expected ':' after key, got '%s'", currentChar)
 			}
 
 		case "value":
 			if currentChar == "\"" {
+				numberOfDoubleQuotas++
 				if len(currentValue) > 0 {
 					// End of value
 					result[string(currentKey)] = string(currentValue)
@@ -238,9 +244,12 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 			}
 
 		case "end":
-			if currentChar == "," {
+			if numberOfDoubleQuotas != 2 {
+				return nil, fmt.Errorf("expected '\"' to match on a value")
+			} else if currentChar == "," {
 				// Another key-value pair expected
 				state = "key"
+				numberOfDoubleQuotas = 0
 			} else if currentChar == "}" {
 				// End of JSON
 				fileContent.Close()
@@ -251,6 +260,9 @@ func ParseJson(filePath string) (map[string]interface{}, error) {
 		}
 	}
 
+	if len(currentKey) > 0 || len(currentValue) > 0 {
+		return nil, fmt.Errorf("invalid json formatting")
+	}
 	fileContent.Close()
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading file: %w", err)

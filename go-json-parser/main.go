@@ -18,8 +18,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error in json parsing: %v", err)
 	}
-	for key, value := range resultMap {
-		fmt.Println(key, value)
-	}
+	// for key, value := range resultMap {
+	// 	fmt.Println(key, value)
+	// }
 	fmt.Println(resultMap)
 }
