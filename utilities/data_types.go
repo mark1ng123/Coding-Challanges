@@ -1,7 +1,11 @@
-package file_utilities
+package utilities
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+)
 
+// Stack
 type Stack[T any] struct {
 	items []T
 }
@@ -39,4 +43,14 @@ func (s *Stack[T]) Print() {
 		fmt.Print(item, " ")
 	}
 	fmt.Println()
+}
+
+// Useful struct
+type JSONParser struct {
+	state                string // current state: start, key, colon, value, end
+	currentKey           []rune
+	currentValue         []rune
+	numberOfDoubleQuotes int
+	result               map[string]interface{}
+	scanner              *bufio.Scanner
 }
