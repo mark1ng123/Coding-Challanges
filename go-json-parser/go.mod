@@ -1,4 +1,4 @@
-module coding-challenge/wc-tool-go
+module coding-challanges/json-parser
 
 go 1.23.3
 
