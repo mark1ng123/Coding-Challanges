@@ -55,6 +55,10 @@ func isArray(currValue string) bool {
 	return len(currValue) > 1 && currValue[0] == '[' && currValue[len(currValue)-1] == ']'
 }
 
+func isDict(currValue string) bool {
+	return len(currValue) > 1 && currValue[0] == '{' && currValue[len(currValue)-1] == '}'
+}
+
 func parseArray(currValue string) ([]interface{}, error) {
 	var resultArray []interface{}
 	if len(currValue) == 0 {
@@ -100,6 +104,16 @@ func setRightTypeForValue(currValue string) (interface{}, error) {
 		return castedVal, nil
 	case isArray(currValue):
 		return parseArray(currValue[1 : len(currValue)-1])
+	case isDict(currValue):
+		// something for it like our own json parser
+		nestedScanner := bufio.NewScanner(strings.NewReader(currValue))
+		nestedParser := NewJSONParser(nestedScanner)
+		parsedDict, err := nestedParser.JsonParse()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing nested dictionary: %v", err)
+		}
+		castedVal = parsedDict
+		return castedVal, nil
 	default:
 		if len(currValue) > 1 && currValue[0] == '"' && currValue[len(currValue)-1] == '"' {
 			castedVal = currValue[1 : len(currValue)-1]
@@ -134,16 +148,18 @@ func (p *JSONParser) handleState(currentChar string) error {
 			return fmt.Errorf("expected ':' after key, got '%s'", currentChar)
 		}
 	case "value":
-		if currentChar == "[" {
+		if currentChar == "[" || currentChar == "{" {
 			p.nestingLevel++
-		} else if currentChar == "]" {
+			p.currentValue = append(p.currentValue, rune(currentChar[0]))
+		} else if currentChar == "]" || (currentChar == "}" && p.nestingLevel > 0) {
 			if p.nestingLevel > 0 {
 				p.nestingLevel--
+				p.currentValue = append(p.currentValue, rune(currentChar[0]))
 			}
-		}
-		if (currentChar == "," || currentChar == "}") && p.nestingLevel == 0 {
+		} else if (currentChar == "," || currentChar == "}") && p.nestingLevel == 0 {
 			if len(p.currentValue) > 0 {
 				value, err := setRightTypeForValue(string(p.currentValue))
+				fmt.Println(value)
 				if err != nil {
 					return err
 				}

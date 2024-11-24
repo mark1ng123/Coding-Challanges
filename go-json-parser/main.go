@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	filepath := "step4/valid.json"
+	filepath := "step4/valid2.json"
 	isValid, err := utilities.DeclareValidJson(filepath)
 	if err != nil {
 		log.Fatalf("Error in json: %v", err)
