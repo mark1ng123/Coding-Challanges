@@ -105,9 +105,10 @@ func setRightTypeForValue(currValue string) (interface{}, error) {
 	case isArray(currValue):
 		return parseArray(currValue[1 : len(currValue)-1])
 	case isDict(currValue):
-		// something for it like our own json parser
-		nestedScanner := bufio.NewScanner(strings.NewReader(currValue))
-		nestedParser := NewJSONParser(nestedScanner)
+		// Parse the nested dictionary directly
+		scanner := bufio.NewScanner(strings.NewReader(currValue))
+		scanner.Split(bufio.ScanRunes)
+		nestedParser := NewJSONParser(scanner)
 		parsedDict, err := nestedParser.JsonParse()
 		if err != nil {
 			return nil, fmt.Errorf("error parsing nested dictionary: %v", err)
@@ -159,7 +160,6 @@ func (p *JSONParser) handleState(currentChar string) error {
 		} else if (currentChar == "," || currentChar == "}") && p.nestingLevel == 0 {
 			if len(p.currentValue) > 0 {
 				value, err := setRightTypeForValue(string(p.currentValue))
-				fmt.Println(value)
 				if err != nil {
 					return err
 				}
