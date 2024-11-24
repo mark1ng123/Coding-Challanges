@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
+	"strings"
 )
 
 func NewJSONParser(scanner *bufio.Scanner) *JSONParser {
 	return &JSONParser{
-		state:   "start",
-		result:  make(map[string]interface{}),
-		scanner: scanner,
+		state:        "start",
+		result:       make(map[string]interface{}),
+		scanner:      scanner,
+		nestingLevel: 0,
 	}
 }
 func (p *JSONParser) JsonParse() (map[string]interface{}, error) {
@@ -48,6 +51,40 @@ func isNIL(currValue string) bool {
 	return currValue == "null"
 }
 
+func isArray(currValue string) bool {
+	return len(currValue) > 1 && currValue[0] == '[' && currValue[len(currValue)-1] == ']'
+}
+
+func isDict(currValue string) bool {
+	return len(currValue) > 1 && currValue[0] == '{' && currValue[len(currValue)-1] == '}'
+}
+
+func parseArray(currValue string) ([]interface{}, error) {
+	var resultArray []interface{}
+	if len(currValue) == 0 {
+		return resultArray, nil
+	}
+	arrayElements := strings.Split(currValue, ",")
+	var firstType reflect.Type
+	for elementIdx, element := range arrayElements {
+		element = strings.TrimSpace(element)
+		valueWithType, err := setRightTypeForValue(element)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing array element at index %d: %v", elementIdx, err)
+		}
+		if elementIdx == 0 {
+			firstType = reflect.TypeOf(valueWithType)
+		} else {
+			if reflect.TypeOf(valueWithType) != firstType {
+				return nil, fmt.Errorf("type mismatch in array: expected %s, got %s", firstType, reflect.TypeOf(valueWithType))
+			}
+		}
+		resultArray = append(resultArray, valueWithType)
+	}
+	return resultArray, nil
+
+}
+
 func setRightTypeForValue(currValue string) (interface{}, error) {
 	var castedVal interface{}
 	switch {
@@ -64,6 +101,19 @@ func setRightTypeForValue(currValue string) (interface{}, error) {
 		return castedVal, nil
 	case isNIL(currValue):
 		castedVal = nil
+		return castedVal, nil
+	case isArray(currValue):
+		return parseArray(currValue[1 : len(currValue)-1])
+	case isDict(currValue):
+		// Parse the nested dictionary directly
+		scanner := bufio.NewScanner(strings.NewReader(currValue))
+		scanner.Split(bufio.ScanRunes)
+		nestedParser := NewJSONParser(scanner)
+		parsedDict, err := nestedParser.JsonParse()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing nested dictionary: %v", err)
+		}
+		castedVal = parsedDict
 		return castedVal, nil
 	default:
 		if len(currValue) > 1 && currValue[0] == '"' && currValue[len(currValue)-1] == '"' {
@@ -99,7 +149,15 @@ func (p *JSONParser) handleState(currentChar string) error {
 			return fmt.Errorf("expected ':' after key, got '%s'", currentChar)
 		}
 	case "value":
-		if currentChar == "," || currentChar == "}" {
+		if currentChar == "[" || currentChar == "{" {
+			p.nestingLevel++
+			p.currentValue = append(p.currentValue, rune(currentChar[0]))
+		} else if currentChar == "]" || (currentChar == "}" && p.nestingLevel > 0) {
+			if p.nestingLevel > 0 {
+				p.nestingLevel--
+				p.currentValue = append(p.currentValue, rune(currentChar[0]))
+			}
+		} else if (currentChar == "," || currentChar == "}") && p.nestingLevel == 0 {
 			if len(p.currentValue) > 0 {
 				value, err := setRightTypeForValue(string(p.currentValue))
 				if err != nil {
