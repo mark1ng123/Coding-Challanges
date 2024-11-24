@@ -53,4 +53,5 @@ type JSONParser struct {
 	numberOfDoubleQuotes int
 	result               map[string]interface{}
 	scanner              *bufio.Scanner
+	nestingLevel         int
 }
